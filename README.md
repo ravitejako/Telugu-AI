@@ -1,9 +1,9 @@
 # Telugu AI
 
-A modern, multi-language conversational AI chat app with professional UI, dark/light mode, voice input/output, and support for Telugu and more.
+A modern, multi-language conversational AI chat app with a professional interface, dark/light mode, and advanced voice support, focused on Telugu and more.
 
 ## Features
-- ✨ Professional, Grok-inspired chat interface
+- ✨ Sleek, Grok-inspired chat UI
 - 🌓 Dark & light mode toggle
 - 🗣️ Voice input (speech-to-text) and output (text-to-speech)
 - 🎤 Voice selection for speech output
