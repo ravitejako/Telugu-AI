@@ -42,12 +42,57 @@ body {
     font-size: 1rem !important;
   }
   .input-bar button {
-    width: 40px !important;
-    height: 40px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
     font-size: 1.2rem !important;
     padding: 0 !important;
   }
+  .chat-bubble {
+    margin-bottom: 0.5rem !important;
+    font-size: 0.95rem !important;
+  }
+  .input-bar {
+    position: sticky !important;
+    bottom: env(safe-area-inset-bottom, 0) !important;
+    z-index: 999 !important;
+    background: var(--background);
+  }
+  .typing-indicator {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5em;
+    margin-left: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .typing-dot {
+    width: 10px;
+    height: 10px;
+    background: #6366f1;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0 2px;
+    animation: bounce 1s infinite;
+    opacity: 0.8;
+  }
+  .typing-dot:nth-child(1) { animation-delay: 0s; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% {
+      transform: translateY(0);
+      opacity: 0.8;
+    }
+    40% {
+      transform: translateY(-8px);
+      opacity: 1;
+    }
+  }
 }
+
 
 
 @layer base {

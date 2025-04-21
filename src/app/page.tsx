@@ -33,7 +33,25 @@ const ChatBubble = React.memo(function ChatBubble({msg, darkMode, userBubble, ai
   );
 });
 
+// Animated Typing... indicator
+const TypingAnimated = () => {
+  const [dotCount, setDotCount] = React.useState(1);
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setDotCount((c) => (c % 3) + 1);
+    }, 400);
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <div className="typing-indicator" aria-label="AI is typing">
+      <span>Typing{'.'.repeat(dotCount)}</span>
+    </div>
+  );
+};
+
 export default function Home() {
+  // (existing state...)
+  const chatEndRef = React.useRef<HTMLDivElement>(null);
   // Speech recognition support state
   const [isSpeechRecognitionSupported, setIsSpeechRecognitionSupported] = useState(true);
   const [userInput, setUserInput] = useState('');
@@ -96,6 +114,13 @@ export default function Home() {
   }, []);
 
   const [loading, setLoading] = useState(false);
+
+  // Auto-scroll to bottom on new message or loading
+  React.useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chat, loading]);
   const handleSubmit = React.useCallback(async () => {
     if (!userInput.trim()) return;
     setChat(prev => [...prev, {role: 'user', content: userInput}]);
@@ -217,9 +242,10 @@ export default function Home() {
             ))}
             {loading && (
               <div className="w-full flex justify-start mb-6 pl-[10vw]">
-                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500" aria-label="Loading"></div>
+                <TypingAnimated />
               </div>
             )}
+            <div ref={chatEndRef} />
           </div>
           {/* Input Bar */}
           {/* Speech recognition support warning */}
