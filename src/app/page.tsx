@@ -15,11 +15,18 @@ import {Toaster} from '@/components/ui/toaster';
 import React from 'react';
 type ChatMessage = { role: 'user' | 'ai', content: string };
 
+type PersonaType = 'bro' | 'akka' | 'mass bestie' | 'formal assistant';
+
+type ResponseType = {
+  response?: string;
+  bestieResponse?: string;
+};
+
 // Memoized chat bubble for performance
 const ChatBubble = React.memo(function ChatBubble({msg, darkMode, userBubble, aiBubble}: {msg: ChatMessage, darkMode: boolean, userBubble: string, aiBubble: string}) {
   return (
     <div
-      className={`max-w-[70%] px-5 py-3 rounded-2xl shadow ${msg.role === 'user' ? userBubble : aiBubble} whitespace-pre-line text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 chat-bubble`}
+      className={`max-w-[85%] sm:max-w-[70%] px-3 sm:px-5 py-2 sm:py-3 rounded-2xl shadow ${msg.role === 'user' ? userBubble : aiBubble} whitespace-pre-line text-sm sm:text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 chat-bubble`}
       tabIndex={0}
       aria-label={msg.role === 'user' ? 'Your message' : 'AI response'}
       style={{
@@ -50,20 +57,17 @@ const TypingAnimated = () => {
 };
 
 export default function Home() {
-  // (existing state...)
   const chatEndRef = React.useRef<HTMLDivElement>(null);
-  // Speech recognition support state
   const [isSpeechRecognitionSupported, setIsSpeechRecognitionSupported] = useState(true);
   const [userInput, setUserInput] = useState('');
   const [chat, setChat] = useState<ChatMessage[]>([]);
-  const [persona, setPersona] = useState('bro');
-
+  const [persona, setPersona] = useState<PersonaType>('bro');
   const {toast} = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<string>('');
-  // Language selection removed. Default to Telugu only.
   const selectedLang = 'te-IN';
+  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -110,7 +114,7 @@ export default function Home() {
   }, [selectedLang, toast]);
 
   const handlePersonaChange = React.useCallback((value: string) => {
-    setPersona(value);
+    setPersona(value as PersonaType);
   }, []);
 
   const [loading, setLoading] = useState(false);
@@ -127,14 +131,14 @@ export default function Home() {
     setUserInput('');
     setLoading(true);
     try {
-      let response;
+      let response: ResponseType;
       const strongPrompt = `IMPORTANT: Reply ONLY in Telugu. Use Telugu script. User said: ${userInput}`;
       if (persona) {
         response = await choosePersona({ userInput: strongPrompt, persona });
       } else {
         response = await generateRomanTeluguResponse({ userInput: strongPrompt });
       }
-      const aiText = (response.response ?? response.bestieResponse ?? '');
+      const aiText = response.response || response.bestieResponse || '';
       setChat(prev => [...prev, {role: 'ai', content: aiText}]);
       await speakResponse(aiText);
     } catch (error: any) {
@@ -157,33 +161,28 @@ export default function Home() {
     }
   }, [handleSubmit]);
 
-  const [darkMode, setDarkMode] = useState(true);
   // Professional font
   const fontFamily = 'Inter, system-ui, sans-serif';
   // Color palettes
-  const darkBg = 'bg-[#18181b]';
-  const lightBg = 'bg-[#f7f7fa]';
-  const containerBg = darkMode ? 'bg-[#232336]/95 shadow-xl' : 'bg-white/90 shadow-lg';
-  const headerBg = darkMode ? 'bg-[#1b1b24]/90 border-b border-[#23234d]' : 'bg-white/90 border-b border-gray-200';
+  const darkBg = 'bg-[#0A0A0A]';
+  const lightBg = 'bg-[#FAFAFA]';
+  const containerBg = darkMode ? 'bg-[#0A0A0A]/95 shadow-xl' : 'bg-[#FAFAFA]/90 shadow-lg';
+  const headerBg = darkMode ? 'bg-[#111111]/90 border-b border-[#222222]' : 'bg-white/90 border-b border-gray-100';
   const textPrimary = darkMode ? 'text-white' : 'text-gray-900';
   const textSecondary = darkMode ? 'text-gray-400' : 'text-gray-600';
-  const aiBubble = darkMode ? 'bg-[#23234d]/80 text-white border border-[#353570]' : 'bg-[#f1f3fa] text-gray-900 border border-gray-200';
-  const userBubble = darkMode ? 'bg-gradient-to-br from-[#6366f1] to-[#a21caf] text-white' : 'bg-gradient-to-br from-[#a5b4fc] to-[#fbc2eb] text-gray-900';
-  const inputBg = darkMode ? 'bg-[#22223b]/80 border-[#353570]' : 'bg-white border-gray-300';
-  const avatarAi = darkMode ? 'bg-gradient-to-br from-purple-700 to-blue-700 text-white border-[#23234d]' : 'bg-gradient-to-br from-blue-200 to-purple-200 text-gray-900 border-[#e3e6f3]';
-  const avatarUser = darkMode ? 'bg-gradient-to-br from-gray-700 to-gray-900 text-white border-[#23234d]' : 'bg-gradient-to-br from-gray-200 to-gray-400 text-gray-900 border-[#e3e6f3]';
+  const aiBubble = darkMode ? 'bg-[#1A1A1A] text-white border border-[#333333]' : 'bg-white text-gray-900 border border-gray-100';
+  const userBubble = darkMode ? 'bg-purple-600 text-white' : 'bg-purple-500 text-white';
+  const inputBg = darkMode ? 'bg-[#1A1A1A]/80 border-[#333333]' : 'bg-white border-gray-200';
+  const avatarAi = darkMode ? 'bg-[#1A1A1A] text-white border-[#333333]' : 'bg-white text-gray-900 border-gray-100';
+  const avatarUser = darkMode ? 'bg-[#1A1A1A] text-white border-[#333333]' : 'bg-white text-gray-900 border-gray-100';
 
   return (
-    <div className={`min-h-screen w-full flex flex-col items-center ${darkMode ? darkBg : lightBg}`} style={{
-      fontFamily,
-      transition: 'background 0.3s',
-    }}>
+    <div className={`min-h-screen w-full flex flex-col ${darkMode ? 'bg-[#0A0A0A]' : 'bg-[#FAFAFA]'}`}>
       <Toaster />
       {/* Header */}
-      <header className={`w-full fixed top-0 left-0 z-40 ${headerBg} flex items-center justify-between px-6 py-3`}>
-        <span className={`text-2xl font-bold tracking-tight ${textPrimary}`}>Telugu AI</span>
-        <div className="flex items-center gap-4">
-          {/* Voice Selection Dropdown */}
+      <header className={`w-full fixed top-0 left-0 z-40 ${darkMode ? 'bg-[#111111]/90 border-[#222222]' : 'bg-white/90 border-gray-100'} backdrop-blur-md border-b flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4`}>
+        <span className={`text-xl sm:text-2xl font-bold tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>Telugu AI</span>
+        <div className="flex items-center gap-2 sm:gap-4">
           {voices.length > 1 && (
             <select
               value={selectedVoice}
@@ -193,7 +192,11 @@ export default function Home() {
                   window.localStorage.setItem('preferredVoiceName', e.target.value);
                 }
               }}
-              className={`rounded-lg px-3 py-2 text-base font-medium border focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 ${darkMode ? 'bg-[#23234d] text-white border-[#353570] hover:bg-[#353570]' : 'bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200'}`}
+              className={`rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base font-medium border focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200 ${
+                darkMode 
+                  ? 'bg-[#1A1A1A] text-white border-[#333333] hover:bg-[#222222]' 
+                  : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50'
+              }`}
               aria-label="Select voice for speech output"
             >
               <option value="">Default Voice</option>
@@ -205,91 +208,151 @@ export default function Home() {
             </select>
           )}
           <button
-            className={`rounded-full px-4 py-2 font-bold shadow transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 ${darkMode ? 'bg-[#23234d] text-white hover:bg-[#353570]' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'}`}
+            className={`rounded-full p-2 sm:p-2.5 font-medium shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base transform hover:scale-105 ${
+              darkMode 
+                ? 'bg-[#1A1A1A] text-white hover:bg-[#222222] border border-[#333333]' 
+                : 'bg-white text-gray-900 hover:bg-gray-50 border border-gray-200'
+            }`}
             onClick={() => setDarkMode(m => !m)}
             aria-label="Toggle dark/light mode"
           >
-            {darkMode ? '🌞 Light' : '🌙 Dark'}
+            {darkMode ? '🌞' : '🌙'}
           </button>
         </div>
       </header>
+
       {/* Main Container */}
-      <main className={`w-full flex flex-col items-center pt-20 pb-0 px-2 flex-1`}>
-        <section className={`w-full max-w-2xl flex flex-col flex-1 rounded-2xl ${containerBg} px-0 pb-0 pt-2 min-h-[70vh]`}>
+      <main className="w-full flex flex-col items-center pt-20 sm:pt-24 pb-0 px-0 flex-1">
+        <section className={`w-full max-w-3xl flex flex-col flex-1 ${darkMode ? 'bg-[#0A0A0A]' : 'bg-[#FAFAFA]'} min-h-[70vh]`}>
           {/* Chat Feed */}
-          <div className="flex-1 overflow-y-auto px-4 pt-2 pb-36" style={{scrollbarWidth: 'thin', scrollbarColor: darkMode ? '#353570 #22223b' : '#e3e6f3 #fff'}}>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-4 pb-24 sm:pb-32" style={{scrollbarWidth: 'thin', scrollbarColor: darkMode ? '#333333 #1A1A1A' : '#E5E5E5 #FFFFFF'}}>
             {chat.length === 0 && (
-              <div className={`text-center mt-16 text-lg font-medium ${textSecondary}`}>Start the conversation!</div>
+              <div className={`text-center mt-12 sm:mt-16 space-y-4`}>
+                <h1 className={`text-2xl sm:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Welcome to Telugu AI
+                </h1>
+                <p className={`text-base sm:text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Start a conversation in Telugu or English
+                </p>
+              </div>
             )}
             {chat.map((msg, idx) => (
               <div
                 key={idx}
                 className={`flex items-end mb-6 w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                style={{
-                  minHeight: '56px',
-                  paddingLeft: msg.role === 'ai' ? '0' : '10vw',
-                  paddingRight: msg.role === 'user' ? '0' : '10vw',
-                }}
               >
                 {msg.role === 'ai' && (
-                  <div className={`flex-shrink-0 w-9 h-9 ${avatarAi} rounded-full flex items-center justify-center mr-3 font-bold text-lg shadow border-2 avatar-ai`} aria-label="AI Avatar">🤖</div>
+                  <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center mr-3 font-bold text-base sm:text-lg border-2 ${
+                    darkMode 
+                      ? 'bg-[#1A1A1A] text-white border-[#333333]' 
+                      : 'bg-white text-gray-900 border-gray-100'
+                  }`} aria-label="AI Avatar">
+                    🤖
+                  </div>
                 )}
-                <ChatBubble msg={msg} darkMode={darkMode} userBubble={userBubble} aiBubble={aiBubble} />
+                <div
+                  className={`max-w-[85%] sm:max-w-[75%] px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl shadow-lg ${
+                    msg.role === 'user'
+                      ? darkMode
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-purple-500 text-white'
+                      : darkMode
+                      ? 'bg-[#1A1A1A] text-white border border-[#333333]'
+                      : 'bg-white text-gray-900 border border-gray-100'
+                  } whitespace-pre-line text-sm sm:text-base font-medium`}
+                  style={{
+                    boxShadow: msg.role === 'ai' 
+                      ? (darkMode ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 20px rgba(0,0,0,0.05)') 
+                      : '0 4px 20px rgba(147,51,234,0.2)',
+                  }}
+                >
+                  {msg.content}
+                </div>
                 {msg.role === 'user' && (
-                  <div className={`flex-shrink-0 w-9 h-9 ${avatarUser} rounded-full flex items-center justify-center ml-3 font-bold text-lg shadow border-2 avatar-user`} aria-label="User Avatar">🧑‍🚀</div>
+                  <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center ml-3 font-bold text-base sm:text-lg border-2 ${
+                    darkMode 
+                      ? 'bg-[#1A1A1A] text-white border-[#333333]' 
+                      : 'bg-white text-gray-900 border-gray-100'
+                  }`} aria-label="User Avatar">
+                    👤
+                  </div>
                 )}
               </div>
             ))}
             {loading && (
-              <div className="w-full flex justify-start mb-6 pl-[10vw]">
-                <TypingAnimated />
+              <div className="w-full flex justify-start mb-6 pl-[5vw]">
+                <div className={`flex items-center gap-1 px-4 py-2 rounded-full ${
+                  darkMode ? 'bg-[#1A1A1A] text-gray-400' : 'bg-white text-gray-500'
+                } border ${darkMode ? 'border-[#333333]' : 'border-gray-200'}`}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
+
           {/* Input Bar */}
-          {/* Speech recognition support warning */}
           {!isSpeechRecognitionSupported && (
-            <div className="w-full text-center mb-2 text-red-600 bg-red-50 border border-red-200 rounded p-2 text-sm" role="alert">
-              Voice input is not supported on this browser/device. Please use Chrome on Android or a compatible browser for voice features.
+            <div className="fixed bottom-24 left-0 w-full px-4 sm:px-0">
+              <div className="w-full max-w-3xl mx-auto">
+                <div className="text-center mb-2 text-xs sm:text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg p-2" role="alert">
+                  Voice input is not supported on this browser/device. Please use Chrome on Android or a compatible browser for voice features.
+                </div>
+              </div>
             </div>
           )}
           <form
-            className={`fixed bottom-0 left-0 w-full max-w-2xl mx-auto flex gap-3 items-end rounded-t-2xl shadow-2xl border-t z-50 transition-colors duration-300 ${containerBg} px-4 py-4 input-bar`}
+            className={`fixed bottom-0 left-0 w-full ${darkMode ? 'bg-[#111111]/90 border-[#222222]' : 'bg-white/90 border-gray-100'} backdrop-blur-md border-t`}
             style={{left: '50%', transform: 'translateX(-50%)'}}
             onSubmit={e => {
               e.preventDefault();
               handleSubmit();
             }}
           >
-            <Textarea
-              ref={textareaRef}
-              placeholder="Type your message..."
-              value={userInput}
-              onChange={e => setUserInput(e.target.value)}
-              onKeyDown={handleInputKeyDown}
-              rows={1}
-              className={`flex-1 resize-none rounded-xl shadow border transition-colors duration-300 font-medium placeholder:opacity-70 ${inputBg} ${textPrimary} focus:border-blue-400 focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400/80`}
-              style={{minHeight: '46px', maxHeight: '120px'}}
-              aria-label="Type your message"
-            />
-            <Button
-              type="button"
-              onClick={handleVoiceInput}
-              className={`rounded-full p-3 shadow transition-colors text-xl focus:outline-none focus:ring-2 focus:ring-blue-400 ${darkMode ? 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-purple-700 hover:to-blue-700 text-white' : 'bg-gradient-to-br from-blue-300 to-purple-300 hover:from-purple-400 hover:to-blue-400 text-gray-900'}`}
-              aria-label="Voice Input"
-              disabled={!isSpeechRecognitionSupported}
-              title={!isSpeechRecognitionSupported ? 'Voice input not supported on this browser/device' : ''}
-            >
-              <span role="img" aria-label="Microphone">🎤</span>
-            </Button>
-            <Button
-              type="submit"
-              className={`rounded-full p-3 shadow transition-colors font-bold text-xl focus:outline-none focus:ring-2 focus:ring-blue-400 ${darkMode ? 'bg-gradient-to-tr from-purple-600 to-blue-500 hover:from-blue-600 hover:to-purple-700 text-white' : 'bg-gradient-to-tr from-purple-300 to-blue-300 hover:from-blue-400 hover:to-purple-400 text-gray-900'}`}
-              aria-label="Send"
-            >
-              ➤
-            </Button>
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex gap-2 sm:gap-3 items-end">
+              <Textarea
+                ref={textareaRef}
+                placeholder="Type your message..."
+                value={userInput}
+                onChange={e => setUserInput(e.target.value)}
+                onKeyDown={handleInputKeyDown}
+                rows={1}
+                className={`flex-1 resize-none rounded-xl shadow-sm border transition-all duration-200 font-medium placeholder:opacity-70 text-sm sm:text-base focus:ring-2 focus:ring-purple-500 ${
+                  darkMode 
+                    ? 'bg-[#1A1A1A] text-white border-[#333333] focus:bg-[#222222]' 
+                    : 'bg-white text-gray-900 border-gray-200 focus:bg-gray-50'
+                }`}
+                style={{minHeight: '44px', maxHeight: '120px'}}
+                aria-label="Type your message"
+              />
+              <button
+                type="button"
+                onClick={handleVoiceInput}
+                className={`rounded-xl p-3 shadow-lg transition-all duration-300 text-lg sm:text-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transform hover:scale-105 ${
+                  darkMode 
+                    ? 'bg-[#1A1A1A] text-white hover:bg-[#222222] border border-[#333333]' 
+                    : 'bg-white text-gray-900 hover:bg-gray-50 border border-gray-200'
+                }`}
+                aria-label="Voice Input"
+                disabled={!isSpeechRecognitionSupported}
+                title={!isSpeechRecognitionSupported ? 'Voice input not supported on this browser/device' : ''}
+              >
+                🎤
+              </button>
+              <button
+                type="submit"
+                className={`rounded-xl p-3 shadow-lg transition-all duration-300 font-bold text-lg sm:text-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transform hover:scale-105 ${
+                  darkMode 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                    : 'bg-purple-500 text-white hover:bg-purple-600'
+                }`}
+                aria-label="Send"
+              >
+                ➤
+              </button>
+            </div>
           </form>
         </section>
       </main>
