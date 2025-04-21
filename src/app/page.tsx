@@ -16,6 +16,8 @@ import {Toaster} from '@/components/ui/toaster';
 type ChatMessage = { role: 'user' | 'ai', content: string };
 
 export default function Home() {
+  // Speech recognition support state
+  const [isSpeechRecognitionSupported, setIsSpeechRecognitionSupported] = useState(true);
   const [userInput, setUserInput] = useState('');
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [persona, setPersona] = useState('bro');
@@ -30,6 +32,14 @@ export default function Home() {
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.focus();
+    }
+  }, []);
+
+  // Check for speech recognition support on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      setIsSpeechRecognitionSupported(!!SpeechRecognition);
     }
   }, []);
 
@@ -124,7 +134,10 @@ export default function Home() {
   const avatarUser = darkMode ? 'bg-gradient-to-br from-gray-700 to-gray-900 text-white border-[#23234d]' : 'bg-gradient-to-br from-gray-200 to-gray-400 text-gray-900 border-[#e3e6f3]';
 
   return (
-    <div className={`min-h-screen w-full flex flex-col items-center ${darkMode ? darkBg : lightBg}`} style={{fontFamily}}>
+    <div className={`min-h-screen w-full flex flex-col items-center ${darkMode ? darkBg : lightBg}`} style={{
+      fontFamily,
+      transition: 'background 0.3s',
+    }}>
       <Toaster />
       {/* Header */}
       <header className={`w-full fixed top-0 left-0 z-40 ${headerBg} flex items-center justify-between px-6 py-3`}>
@@ -179,10 +192,10 @@ export default function Home() {
                 }}
               >
                 {msg.role === 'ai' && (
-                  <div className={`flex-shrink-0 w-9 h-9 ${avatarAi} rounded-full flex items-center justify-center mr-3 font-bold text-lg shadow border-2`} aria-label="AI Avatar">🤖</div>
+                  <div className={`flex-shrink-0 w-9 h-9 ${avatarAi} rounded-full flex items-center justify-center mr-3 font-bold text-lg shadow border-2 avatar-ai`} aria-label="AI Avatar">🤖</div>
                 )}
                 <div
-                  className={`max-w-[70%] px-5 py-3 rounded-2xl shadow ${msg.role === 'user' ? userBubble : aiBubble} whitespace-pre-line text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200`}
+                  className={`max-w-[70%] px-5 py-3 rounded-2xl shadow ${msg.role === 'user' ? userBubble : aiBubble} whitespace-pre-line text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 chat-bubble`}
                   tabIndex={0}
                   aria-label={msg.role === 'user' ? 'Your message' : 'AI response'}
                   style={{
@@ -194,14 +207,20 @@ export default function Home() {
                   {msg.content}
                 </div>
                 {msg.role === 'user' && (
-                  <div className={`flex-shrink-0 w-9 h-9 ${avatarUser} rounded-full flex items-center justify-center ml-3 font-bold text-lg shadow border-2`} aria-label="User Avatar">🧑‍🚀</div>
+                  <div className={`flex-shrink-0 w-9 h-9 ${avatarUser} rounded-full flex items-center justify-center ml-3 font-bold text-lg shadow border-2 avatar-user`} aria-label="User Avatar">🧑‍🚀</div>
                 )}
               </div>
             ))}
           </div>
           {/* Input Bar */}
+          {/* Speech recognition support warning */}
+          {!isSpeechRecognitionSupported && (
+            <div className="w-full text-center mb-2 text-red-600 bg-red-50 border border-red-200 rounded p-2 text-sm" role="alert">
+              Voice input is not supported on this browser/device. Please use Chrome on Android or a compatible browser for voice features.
+            </div>
+          )}
           <form
-            className={`fixed bottom-0 left-0 w-full max-w-2xl mx-auto flex gap-3 items-end rounded-t-2xl shadow-2xl border-t z-50 transition-colors duration-300 ${containerBg} px-4 py-4`}
+            className={`fixed bottom-0 left-0 w-full max-w-2xl mx-auto flex gap-3 items-end rounded-t-2xl shadow-2xl border-t z-50 transition-colors duration-300 ${containerBg} px-4 py-4 input-bar`}
             style={{left: '50%', transform: 'translateX(-50%)'}}
             onSubmit={e => {
               e.preventDefault();
@@ -224,6 +243,8 @@ export default function Home() {
               onClick={handleVoiceInput}
               className={`rounded-full p-3 shadow transition-colors text-xl focus:outline-none focus:ring-2 focus:ring-blue-400 ${darkMode ? 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-purple-700 hover:to-blue-700 text-white' : 'bg-gradient-to-br from-blue-300 to-purple-300 hover:from-purple-400 hover:to-blue-400 text-gray-900'}`}
               aria-label="Voice Input"
+              disabled={!isSpeechRecognitionSupported}
+              title={!isSpeechRecognitionSupported ? 'Voice input not supported on this browser/device' : ''}
             >
               <span role="img" aria-label="Microphone">🎤</span>
             </Button>
