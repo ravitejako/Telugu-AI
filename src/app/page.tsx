@@ -8,12 +8,30 @@ import {speakResponse, getAvailableVoices, setPreferredVoice} from '@/services/t
 import {Button} from '@/components/ui/button';
 import {Textarea} from '@/components/ui/textarea';
 import {useEffect, useRef, useState} from 'react';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
+
 import {useToast} from '@/hooks/use-toast';
 import {Toaster} from '@/components/ui/toaster';
 
+import React from 'react';
 type ChatMessage = { role: 'user' | 'ai', content: string };
+
+// Memoized chat bubble for performance
+const ChatBubble = React.memo(function ChatBubble({msg, darkMode, userBubble, aiBubble}: {msg: ChatMessage, darkMode: boolean, userBubble: string, aiBubble: string}) {
+  return (
+    <div
+      className={`max-w-[70%] px-5 py-3 rounded-2xl shadow ${msg.role === 'user' ? userBubble : aiBubble} whitespace-pre-line text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 chat-bubble`}
+      tabIndex={0}
+      aria-label={msg.role === 'user' ? 'Your message' : 'AI response'}
+      style={{
+        boxShadow: msg.role === 'ai' ? (darkMode ? '0 2px 12px 0 #23234d44' : '0 2px 10px 0 #e3e6f344') : (darkMode ? '0 2px 12px 0 #a21caf33' : '0 2px 10px 0 #fbc2eb33'),
+        marginLeft: msg.role === 'ai' ? '0' : 'auto',
+        marginRight: msg.role === 'user' ? '0' : 'auto',
+      }}
+    >
+      {msg.content}
+    </div>
+  );
+});
 
 export default function Home() {
   // Speech recognition support state
@@ -21,7 +39,7 @@ export default function Home() {
   const [userInput, setUserInput] = useState('');
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [persona, setPersona] = useState('bro');
-  const [isSpeaking, setIsSpeaking] = useState(false);
+
   const {toast} = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -59,7 +77,7 @@ export default function Home() {
     };
   }, []);
 
-  const handleVoiceInput = async () => {
+  const handleVoiceInput = React.useCallback(async () => {
     try {
       const voiceText = await getVoiceInput(selectedLang);
       setUserInput(voiceText);
@@ -71,31 +89,26 @@ export default function Home() {
       });
       console.error('Error recording voice:', error);
     }
-  };
+  }, [selectedLang, toast]);
 
-  const handlePersonaChange = (value: string) => {
+  const handlePersonaChange = React.useCallback((value: string) => {
     setPersona(value);
-  };
+  }, []);
 
-  const handleSubmit = async () => {
+  const [loading, setLoading] = useState(false);
+  const handleSubmit = React.useCallback(async () => {
     if (!userInput.trim()) return;
     setChat(prev => [...prev, {role: 'user', content: userInput}]);
     setUserInput('');
+    setLoading(true);
     try {
       let response;
-      // Language selection removed. Always prompt in Telugu.
       const strongPrompt = `IMPORTANT: Reply ONLY in Telugu. Use Telugu script. User said: ${userInput}`;
       if (persona) {
-        response = await choosePersona({
-          userInput: strongPrompt,
-          persona: persona
-        });
+        response = await choosePersona({ userInput: strongPrompt, persona });
       } else {
-        response = await generateRomanTeluguResponse({
-          userInput: strongPrompt
-        });
+        response = await generateRomanTeluguResponse({ userInput: strongPrompt });
       }
-      // Support both response.response and response.bestieResponse
       const aiText = (response.response ?? response.bestieResponse ?? '');
       setChat(prev => [...prev, {role: 'ai', content: aiText}]);
       await speakResponse(aiText);
@@ -107,15 +120,17 @@ export default function Home() {
       });
       setChat(prev => [...prev, {role: 'ai', content: 'Anukokunda jarigindi! Malli try cheyandi.'}]);
       console.error('Error generating AI response:', error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [userInput, persona, toast]);
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleInputKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
-  };
+  }, [handleSubmit]);
 
   const [darkMode, setDarkMode] = useState(true);
   // Professional font
@@ -194,23 +209,17 @@ export default function Home() {
                 {msg.role === 'ai' && (
                   <div className={`flex-shrink-0 w-9 h-9 ${avatarAi} rounded-full flex items-center justify-center mr-3 font-bold text-lg shadow border-2 avatar-ai`} aria-label="AI Avatar">🤖</div>
                 )}
-                <div
-                  className={`max-w-[70%] px-5 py-3 rounded-2xl shadow ${msg.role === 'user' ? userBubble : aiBubble} whitespace-pre-line text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 chat-bubble`}
-                  tabIndex={0}
-                  aria-label={msg.role === 'user' ? 'Your message' : 'AI response'}
-                  style={{
-                    boxShadow: msg.role === 'ai' ? (darkMode ? '0 2px 12px 0 #23234d44' : '0 2px 10px 0 #e3e6f344') : (darkMode ? '0 2px 12px 0 #a21caf33' : '0 2px 10px 0 #fbc2eb33'),
-                    marginLeft: msg.role === 'ai' ? '0' : 'auto',
-                    marginRight: msg.role === 'user' ? '0' : 'auto',
-                  }}
-                >
-                  {msg.content}
-                </div>
+                <ChatBubble msg={msg} darkMode={darkMode} userBubble={userBubble} aiBubble={aiBubble} />
                 {msg.role === 'user' && (
                   <div className={`flex-shrink-0 w-9 h-9 ${avatarUser} rounded-full flex items-center justify-center ml-3 font-bold text-lg shadow border-2 avatar-user`} aria-label="User Avatar">🧑‍🚀</div>
                 )}
               </div>
             ))}
+            {loading && (
+              <div className="w-full flex justify-start mb-6 pl-[10vw]">
+                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500" aria-label="Loading"></div>
+              </div>
+            )}
           </div>
           {/* Input Bar */}
           {/* Speech recognition support warning */}
